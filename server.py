@@ -12,9 +12,11 @@ class server(Thread):
     def run(self, client_connection, client_address):
         while True:
             request = client_connection.recv(1024)
+            print "requested"
 			# Checking the condition for empty requests (which we were getting while testing)
             if len(request) == 0:
-				continue
+                print "empty"
+                continue
 
             request_head, request_body = request.split('\r\n', 1)
             request_head = request_head.splitlines()
@@ -45,7 +47,9 @@ class server(Thread):
 
                 client_connection.sendall(http_response1)
                 client_connection.send(response_headers_raw)
+                client_connection.send('\n')
                 client_connection.sendall(http_responseFile)
+                break
             else:
                 http_response1 = """HTTP/1.1 404 Not Found\n"""
 
@@ -64,9 +68,7 @@ class server(Thread):
                 client_connection.sendall(http_response1)
                 #client_connection.send(response_headers_raw)
                 client_connection.sendall(http_response2)
-
-        client_connection.close()
-
+            client_connection.close()
 
 listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
