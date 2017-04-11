@@ -109,7 +109,10 @@ class server(Thread) :
                 }
 
             response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
-            sendData = http_response1+response_headers_raw+'\n'+http_responseFile
+            if flag == 1 and s.split(':')[0] == "aashay" and  s.split(':')[1] == "password" :
+                sendData = http_response1+response_headers_raw+'\n'+http_responseFile
+            else:
+                sendData = http_response1+response_headers_raw+'\n'
             print "data",sendData
             self.client_connection.sendall(sendData)
         else:
