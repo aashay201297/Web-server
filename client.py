@@ -15,10 +15,11 @@ params = "/username="+username+"&"+"password="+password
 # print ("POST %s HTTP/1.1\r\nHost: %s\r\n" % (params, HOST))
 # sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n" % (GET, HOST))
 sock.send("POST %s HTTP/1.1\r\nHost: %s\r\n" % (params, HOST))
-# print "Qwe"
-# sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n" % (GET, HOST))
+data1 = sock.recv(1024)
+
+sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n" % (GET, HOST))
  
-data = sock.recv(1024*1024)
+data2 = sock.recv(1024*1024)
 # print data
 # string = ""
 # while len(data):
@@ -26,7 +27,8 @@ data = sock.recv(1024*1024)
 #     print "babu"
 #     data = sock.recv(1024)
 #     print "babu2"
-print data
+# print data
+print data2
 sock.close()
  
  

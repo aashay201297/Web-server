@@ -1,6 +1,7 @@
 import socket
 import os.path
 from threading import Thread 
+import base64
 
 HOST, PORT = '', 8888
 
@@ -27,15 +28,17 @@ class server(Thread) :
                 'Connection': 'close',
             }
 
-
         response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
         sendData = http_response1+response_headers_raw+'\n'
         self.client_connection.sendall(sendData)
 
-    def MYauth(self, username, password) :
+
+    def auth(self, username, password) :
         if username == "asd" and password == "123":
             return True
         return False
+
+
     def postResponse(self, request) :
         request_head, request_body = request.split('\r\n', 1)
         request_head = request_head.splitlines()
@@ -54,7 +57,7 @@ class server(Thread) :
             exec(x[0] + '=' + 'x[1]')
         # print username , password
         # if username == "asd" and password == "123":
-        if self.MYauth(username,password) :
+        if self.auth(username,password) :
             http_response1 = """HTTP/1.1 200 OK\n"""
             request_method, request_uri, request_proto = request_headline.split(' ', 3)
             response_headers = {
@@ -63,14 +66,10 @@ class server(Thread) :
                     'Connection': 'close',
                 }
 
-
             response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
             sendData = http_response1+'\n'
             self.client_connection.sendall(sendData)
             # print "Asdasdasdasd"
-
-
-
 
 
     def getResponse(self, request) :
@@ -78,11 +77,21 @@ class server(Thread) :
         request_head = request_head.splitlines()
         request_headline = request_head[0]
         fileName = '.' + request_headline.split(' ')[1]
+        request_body = request_body.split('\r\n')
+        flag = 0
+        s = ''
+        for request in request_body :
+            if request.split(':')[0] == "Authorization" :
+                s = base64.b64decode(request.split(':')[1].split(' ')[2])
+                flag = 1
+                break
 
         # Checking if file is in the current directory
-        if os.path.isfile(fileName) :
-            http_response1 = """HTTP/1.1 200 OK\n"""
-
+        if os.path.isfile(fileName)  :
+            if flag == 1 and s.split(':')[0] == "aashay" and  s.split(':')[1] == "password" :
+                http_response1 = """HTTP/1.1 200 OK\n"""
+            else :
+                http_response1 = """HTTP/1.1 401 OK\n"""
             # Making a dict with headers and their values
             request_headers = dict(x.split(': ', 1) for x in request_head[1:])
 
@@ -93,6 +102,7 @@ class server(Thread) :
             f.close()
             request_method, request_uri, request_proto = request_headline.split(' ', 3)
             response_headers = {
+                    'WWW-Authenticate': 'Basic',
                     'Content-Type': 'text/html; encoding=utf8',
                     'Content-Length': len(http_responseFile),
                     'Connection': 'close',
@@ -100,6 +110,7 @@ class server(Thread) :
 
             response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
             sendData = http_response1+response_headers_raw+'\n'+http_responseFile
+            print "data",sendData
             self.client_connection.sendall(sendData)
         else:
             http_response1 = """HTTP/1.1 404 Not Found\n"""
@@ -120,7 +131,9 @@ class server(Thread) :
         request_head = request_head.splitlines()
 
         requestType = request_head[0].split(' ')[0]
+        print requestType
         if requestType == "GET" :
+            print "getting"
             self.getResponse(request)
         elif requestType == "POST" :
             self.postResponse(request)
@@ -131,14 +144,15 @@ class server(Thread) :
 
     def run(self):
         while True:
-            request = self.client_connection.recv(1024)
+            request = self.client_connection.recv(102400)
 			# Checking the condition for empty requests (which we were getting while testing)
             if len(request) == 0:
                 continue
-            # print request
+            print request
             self.respond(request)
 
         self.client_connection.close()
+        print "closing the connection"
 
 listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -165,7 +179,7 @@ while True:
 
     print requesting_clients
     for value in list_client : 
-        if requesting_clients[value] > 3 : 
+        if requesting_clients[value] > 300 : 
             blacklist.append(value)
     newthread.start()
     threads.append(newthread) 
