@@ -2,6 +2,7 @@ import socket
 import os.path
 from threading import Thread 
 import base64
+import ssl
 
 HOST, PORT = '', 8888
 
@@ -10,6 +11,7 @@ class server(Thread) :
         Thread.__init__(self) 
         self.client_connection = client_connection
         self.client_address = client_address
+        # self.connstream = connstream
 
     def parseRequest(self, request) :
         request_head, request_body = request.split('\r\n', 1)
@@ -75,6 +77,7 @@ class server(Thread) :
         for p in params:
             x = p.split('=')
             exec(x[0] + '=' + 'x[1]')
+        # print username , password
         # if username == "asd" and password == "123":
         if self.auth(username,password) :
             http_response1 = """HTTP/1.1 200 OK\n"""
@@ -126,6 +129,7 @@ class server(Thread) :
 
             response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
             sendData = http_response1+response_headers_raw+'\n'+http_responseFile
+            print "data ",sendData
             self.client_connection.sendall(sendData)
         else:
             http_response1 = """HTTP/1.1 404 Not Found\n"""
@@ -148,6 +152,7 @@ class server(Thread) :
         requestType = request_head[0].split(' ')[0]
         print requestType
         if requestType == "GET" :
+            print "getting"
             self.getResponse(request)
         elif requestType == "POST" :
             self.postResponse(request)
@@ -159,19 +164,30 @@ class server(Thread) :
     def run(self):
         while True:
             request = self.client_connection.recv(102400)
+            # request = self.connstream.read(1024)
+            # print "new = ", request
 			# Checking the condition for empty requests (which we were getting while testing)
-            print request
             if len(request) == 0:
                 continue
+            print request
             self.respond(request)
 
         self.client_connection.close()
         print "closing the connection"
 
+context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+context.load_cert_chain(certfile="cert.pem", keyfile="cert.pem")
+
 listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+listen_socket = ssl.wrap_socket(listen_socket,
+                             server_side=True,
+                             certfile="cert.pem",
+                             keyfile="cert.pem",
+                             ssl_version=ssl.PROTOCOL_SSLv23) 
 listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 listen_socket.bind((HOST, PORT))
-print 'Serving HTTPS on port %s ...' % PORT
+
+print 'Serving HTTP on port %s ...' % PORT
 threads = []
 requesting_clients = dict()
 list_client = []
@@ -180,6 +196,9 @@ while True:
     listen_socket.listen(4) 
     # print "Multithreaded Python server : Waiting for connections from TCP clients..."  
     client_connection, client_address = listen_socket.accept()
+    # r = connstream.read()
+
+    # print "r = ", r
     if client_address[0] in blacklist :
         client_connection.close()
         continue
@@ -191,6 +210,7 @@ while True:
         requesting_clients[client_address[0]] = 1
         list_client.append(client_address[0])
 
+    print requesting_clients
     for value in list_client : 
         if requesting_clients[value] > 300 : 
             blacklist.append(value)
