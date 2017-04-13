@@ -38,7 +38,7 @@ class server(Thread) :
 
     def putResponse(self, request) :
         request_head, request_body, request_headline, fileName = self.parseRequest(request)
-        print "request_head in put:", request_head
+        # print "request_head in put:", request_head
         if self.auth(request_body) == False :
             http_response1 = """HTTP/1.1 401 Unauthorized\n"""
             response_headers = {
@@ -47,7 +47,7 @@ class server(Thread) :
                 'Content-Length': 0,
                 'Connection': 'close',
             }
-            response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
+            response_headers_raw = ''.join('%s: %s\r\n' % (k, v) for k, v in response_headers.iteritems())
             sendData = http_response1+response_headers_raw+'\n'
             self.client_connection.sendall(sendData)
 
@@ -64,10 +64,10 @@ class server(Thread) :
                     'Content-Length': len(l),
                     'Connection': 'close',
                 }
-            response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
+            response_headers_raw = ''.join('%s: %s\r\n' % (k, v) for k, v in response_headers.iteritems())
 
             sendData = http_response1+response_headers_raw+'\n'+l
-            print "send data = ", sendData
+            # print "send data = ", sendData
             self.client_connection.sendall(sendData)
 
 
@@ -92,7 +92,7 @@ class server(Thread) :
         params = params[1]
         params = params.split('/')
         params = params[1]
-        print "params = ",params
+        # print "params = ",params
         if params == '':
             return
         # if self.auth(self.username,self.password) :
@@ -104,7 +104,7 @@ class server(Thread) :
                 'Connection': 'close',
             }
 
-        response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
+        response_headers_raw = ''.join('%s: %s\r\n' % (k, v) for k, v in response_headers.iteritems())
         sendData = http_response1 + '\n'
         self.client_connection.sendall(sendData)
 
@@ -120,7 +120,7 @@ class server(Thread) :
                 'Content-Length': 0,
                 'Connection': 'close',
             }
-            response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
+            response_headers_raw = ''.join('%s: %s\r\n' % (k, v) for k, v in response_headers.iteritems())
             sendData = http_response1+response_headers_raw+'\n'
             self.client_connection.sendall(sendData)
 
@@ -143,9 +143,9 @@ class server(Thread) :
                     'Connection': 'close',
                 }
 
-            response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
+            response_headers_raw = ''.join('%s: %s\r\n' % (k, v) for k, v in response_headers.iteritems())
             sendData = http_response1+response_headers_raw+'\n'+http_responseFile
-            print "data ",sendData
+            # print "data ",sendData
             self.client_connection.sendall(sendData)
         else:
             http_response1 = """HTTP/1.1 404 Not Found\n"""
@@ -155,7 +155,7 @@ class server(Thread) :
                     'Content-Length': len(http_response2),
                     'Connection': 'close',
                 }
-            response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
+            response_headers_raw = ''.join('%s: %s\r\n' % (k, v) for k, v in response_headers.iteritems())
 
             sendData = http_response1 + response_headers_raw + '\n' + http_response2
             self.client_connection.sendall(sendData)
@@ -166,7 +166,7 @@ class server(Thread) :
         request_head = request_head.splitlines()
 
         requestType = request_head[0].split(' ')[0]
-        print "requesttype = " ,requestType
+        # print "requesttype = " ,requestType
         if requestType == "GET" :
             # print "getting"
             self.getResponse(request)
@@ -180,19 +180,17 @@ class server(Thread) :
     def run(self):
         while True:
             request = self.client_connection.recv(102400)
-            # request = self.connstream.read(1024)
-            # print "new = ", request
-			# Checking the condition for empty requests (which we were getting while testing)
+            # Checking the condition for empty requests (which we were getting while testing)
             if len(request) == 0:
                 continue
-            print "request = " ,request
+            # print "request = " ,request
             self.respond(request)
 
         self.client_connection.close()
-        print "closing the connection"
+        # print "closing the connection"
 
-context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-context.load_cert_chain(certfile="cert.pem", keyfile="cert.pem")
+# context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+# context.load_cert_chain(certfile="cert.pem", keyfile="cert.pem")
 
 listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 listen_socket = ssl.wrap_socket(listen_socket,
