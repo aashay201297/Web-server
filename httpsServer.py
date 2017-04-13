@@ -37,8 +37,8 @@ class server(Thread) :
 
 
     def putResponse(self, request) :
-        request_head, request_body, request_headline, fileName = parseRequest(request)
-
+        request_head, request_body, request_headline, fileName = self.parseRequest(request)
+        print "request_head in put:", request_head
         if self.auth(request_body) == False :
             http_response1 = """HTTP/1.1 401 Unauthorized\n"""
             response_headers = {
@@ -57,40 +57,56 @@ class server(Thread) :
             f.write(request_message)
             http_response1 = """HTTP/1.1 200 OK\n"""
             request_method, request_uri, request_proto = request_headline.split(' ', 3)
+            f = open('uploadDone.html','rb')
+            l = f.read(1024)
             response_headers = {
                     'Content-Type': 'text/html; encoding=utf8',
-                    'Content-Length': 0,
+                    'Content-Length': len(l),
                     'Connection': 'close',
                 }
             response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
-            sendData = http_response1+response_headers_raw+'\n'
+
+            sendData = http_response1+response_headers_raw+'\n'+l
+            print "send data = ", sendData
             self.client_connection.sendall(sendData)
 
 
     def postResponse(self, request) :
-        request_head, request_body, request_headline, fileName = parseRequest(request)
-        paramURL = request_headline.split(' ')[1]
-        paramURL = paramURL.split('/')
-        paramURL = paramURL[1]
-        request_message = request.split('\r\n')
-        params = paramURL.split('&')
-        for p in params:
-            x = p.split('=')
-            exec(x[0] + '=' + 'x[1]')
+        request_head, request_body, request_headline, fileName = self.parseRequest(request)
+        # print "re",request_headline
+        # paramURL = request_headline.split(' ')[1]
+        # print "asd",paramURL
+        # paramURL = paramURL.split('/')[1]
+        # # print paramURL
+        # paramURL = paramURL.split('?')[1]
+        # # print "nect",paramURL
+        # # paramURL = paramURL[1]
+        # request_message = request.split('\r\n')
+        # params = paramURL.split('&')
+        # for p in params:
+        #     x = p.split('=')
+        #     exec(x[0] + '=' + 'x[1]')
         # print username , password
         # if username == "asd" and password == "123":
-        if self.auth(username,password) :
-            http_response1 = """HTTP/1.1 200 OK\n"""
-            request_method, request_uri, request_proto = request_headline.split(' ', 3)
-            response_headers = {
-                    'Content-Type': 'text/html; encoding=utf8',
-                    'Content-Length': 0,
-                    'Connection': 'close',
-                }
+        params = request_headline.split(' ')
+        params = params[1]
+        params = params.split('/')
+        params = params[1]
+        print "params = ",params
+        if params == '':
+            return
+        # if self.auth(self.username,self.password) :
+        http_response1 = """HTTP/1.1 200 OK\n"""
+        request_method, request_uri, request_proto = request_headline.split(' ', 3)
+        response_headers = {
+                'Content-Type': 'text/html; encoding=utf8',
+                'Content-Length': 0,
+                'Connection': 'close',
+            }
 
-            response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
-            sendData = http_response1 + '\n'
-            self.client_connection.sendall(sendData)
+        response_headers_raw = ''.join('%s: %s\n' % (k, v) for k, v in response_headers.iteritems())
+        sendData = http_response1 + '\n'
+        self.client_connection.sendall(sendData)
 
 
     def getResponse(self, request) :
@@ -150,9 +166,9 @@ class server(Thread) :
         request_head = request_head.splitlines()
 
         requestType = request_head[0].split(' ')[0]
-        print requestType
+        print "requesttype = " ,requestType
         if requestType == "GET" :
-            print "getting"
+            # print "getting"
             self.getResponse(request)
         elif requestType == "POST" :
             self.postResponse(request)
@@ -169,7 +185,7 @@ class server(Thread) :
 			# Checking the condition for empty requests (which we were getting while testing)
             if len(request) == 0:
                 continue
-            print request
+            print "request = " ,request
             self.respond(request)
 
         self.client_connection.close()
@@ -210,7 +226,7 @@ while True:
         requesting_clients[client_address[0]] = 1
         list_client.append(client_address[0])
 
-    print requesting_clients
+    # print requesting_clients
     for value in list_client : 
         if requesting_clients[value] > 300 : 
             blacklist.append(value)
